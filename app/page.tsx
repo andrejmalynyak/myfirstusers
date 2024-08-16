@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, {useState, useMemo, useEffect, useCallback} from 'react';
+import {useRouter, useSearchParams} from 'next/navigation';
 import { Card } from '@/components/ui/card';
-import Modal from '@/components/Modal'; // We'll create this component
+import Modal from '@/components/Modal';
 
 interface Example {
   title: string;
@@ -13,10 +14,12 @@ interface Example {
 const MarketingDashboard = () => {
   const [selectedExample, setSelectedExample] = useState<Example | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const categories = [
     { title: 'ACQUISITION', items: ['Content', 'SEO', 'Sales', 'Social', 'Ads'] },
-    { title: 'CONVERSION', items: ['Copywriting', 'Landing Page'] },
+    { title: 'CONVERSION', items: ['Copyrighting', 'Landing Page'] },
     { title: 'MORE', items: ['Retention', 'Brand', 'Referral', 'Creative'] },
     { title: 'NEWSLETTER', items: [] },
   ];
@@ -34,13 +37,38 @@ const MarketingDashboard = () => {
     return examples.filter(example => example.tag === selectedFilter);
   }, [selectedFilter, examples]);
 
-  const openModal = (example: Example) => {
-    setSelectedExample(example);
-  };
+  // const openModal = (example: Example) => {
+  //   setSelectedExample(example);
+  // };
+  //
+  // const closeModal = () => {
+  //   setSelectedExample(null);
+  // };
 
-  const closeModal = () => {
+  const openModal = useCallback((example: Example) => {
+    setSelectedExample(example);
+    router.push(`?example=${encodeURIComponent(example.title)}`, undefined, { shallow: true });
+  }, [router]);
+
+  const closeModal = useCallback(() => {
     setSelectedExample(null);
-  };
+    router.push('/', undefined, { shallow: true });
+  }, [router]);
+
+
+  useEffect(() => {
+    const exampleTitle = searchParams.get('example');
+
+    if (exampleTitle) {
+      const newExample = examples.find(example => example.title === exampleTitle);
+
+      if (newExample && newExample.title !== selectedExample?.title) {
+        setSelectedExample(newExample);
+      }
+    } else if (selectedExample !== null) {
+      setSelectedExample(null);
+    }
+  }, [searchParams, examples, selectedExample]);
 
   return (
     <div className="p-[5%] bg-white text-gray-800 min-h-screen">
@@ -82,8 +110,8 @@ const MarketingDashboard = () => {
 
         <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredExamples.map((example, index) => (
-            <Card 
-              key={index} 
+            <Card
+              key={index}
               className="bg-gray-100 hover:bg-gray-200 transition-colors p-6 rounded-xl shadow-md cursor-pointer"
               onClick={() => openModal(example)}
             >
